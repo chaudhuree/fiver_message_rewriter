@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fiverr Message Rewriter</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+       /* Additional custom styles can be added here */
+       #toast-success {
+            position: fixed;
+            top: 20px; /* Adjust as needed */
+            right: 20px; /* Adjust as needed */
+            z-index: 1000; /* Ensure it's on top */
+            display: none; /* Hidden by default */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900">
+    <div class="container mx-auto py-8">
+        <h1 class="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Fiverr Message Rewriter</h1>
+
+        <div class="mb-6">
+            <label for="filter-words" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Filter Words:</label>
+            <ul id="filter-words" class="list-none pl-0 flex flex-wrap gap-2"></ul>
+            <div class="flex items-center mt-2">
+                <input type="text" id="new-filter-word" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-48 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 mr-2" placeholder="Add new word">
+                <button id="add-word-button" class="bg-blue-700 hover:bg-blue-800 text-white font-medium py-2 px-4 rounded focus:outline-none focus:shadow-outline flex items-center">
+                   <i class="fas fa-plus mr-2"></i> Add Word
+                </button>
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <label for="message" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Your message</label>
+            <textarea id="message-input" rows="10" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Enter your message here"></textarea>
+        </div>
+
+        <button id="rewrite-button" class="bg-green-700 hover:bg-green-800 text-white font-medium py-2 px-4 rounded focus:outline-none focus:shadow-outline" disabled>Rewrite Message</button>
+
+        <div class="mt-6">
+            <strong class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Rewritten Message:</strong>
+            <textarea id="rewritten-message" rows="10" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" readonly style="display: none;"></textarea>
+            <button id="copy-button" class="bg-blue-500 mt-6 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center" style="display: none;">
+                <i class="fas fa-copy mr-2"></i> Copy to Clipboard
+            </button>
+
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="toast-success" class="flex items-center justify-between w-full max-w-xs p-4 text-gray-500 bg-white rounded-lg shadow-sm dark:text-gray-400 dark:bg-gray-800" role="alert">
+            <div class="inline-flex items-center justify-center shrink-0 w-8 h-8 text-green-500 bg-green-100 rounded-lg dark:bg-green-800 dark:text-green-200">
+                <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z"/>
+                </svg>
+                <span class="sr-only">Check icon</span>
+            </div>
+            <div class="ms-3 text-sm font-normal">Text copied to clipboard!</div>
+            <button type="button" class="ms-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-100 inline-flex items-center justify-center h-8 w-8 dark:text-gray-500 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700" data-dismiss-target="#toast-success" aria-label="Close">
+                <span class="sr-only">Close</span>
+                <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const filterWordsList = document.getElementById('filter-words');
+        const newFilterWordInput = document.getElementById('new-filter-word');
+        const addWordButton = document.getElementById('add-word-button');
+        const messageInput = document.getElementById('message-input');
+        const rewriteButton = document.getElementById('rewrite-button');
+        const rewrittenMessage = document.getElementById('rewritten-message');
+        const copyButton = document.getElementById('copy-button');
+        const toast = document.getElementById('toast-success');
+
+
+        // Load filter words from localStorage
+        let filterText = JSON.parse(localStorage.getItem('filterText')) || ["payment", "pay", "link", "email", "phone", "contact", "outside", "money", "review", "rating", "rate", "paypal", "stripe", "gateway"];
+
+        function updateFilterWordsList() {
+            filterWordsList.innerHTML = ""; // Clear the list
+
+            filterText.forEach(word => {
+                const listItem = document.createElement('li');
+                listItem.className = "inline-flex items-center bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-full px-3 py-1 text-sm font-medium"; //Tailwind classes for horizontal list items
+
+                listItem.innerHTML = `
+                    <span class="mr-2">${word}</span>
+                    <button class="remove-button text-red-500 hover:text-red-700 focus:outline-none">
+                        <i class="fas fa-times-circle"></i>
+                    </button>
+                `;
+
+                const removeButton = listItem.querySelector('.remove-button');
+                removeButton.addEventListener('click', () => {
+                    filterText = filterText.filter(w => w !== word); // Remove the word
+                    localStorage.setItem('filterText', JSON.stringify(filterText)); // Update localStorage
+                    updateFilterWordsList(); // Refresh the list
+                });
+
+                filterWordsList.appendChild(listItem);
+            });
+        }
+
+        // Initial population of the filter word list
+        updateFilterWordsList();
+
+        addWordButton.addEventListener('click', () => {
+            const newWord = newFilterWordInput.value.trim();
+            if (newWord && !filterText.includes(newWord)) {
+                filterText.push(newWord);
+                localStorage.setItem('filterText', JSON.stringify(filterText));
+                newFilterWordInput.value = ""; // Clear the input
+                updateFilterWordsList();
+            }
+        });
+
+        function rewriteWord(word) {
+            if (word.length <= 2) {
+                return word; // Don't rewrite short words
+            }
+
+            let rewritten = "";
+            let symbolCount = 0;
+            for (let i = 0; i < word.length; i++) {
+                if (i > 0 && i < word.length - 1 && symbolCount < 2) {
+                    const symbol = Math.random() < 0.3 ? '-' : '_';
+                    rewritten += symbol;
+                    symbolCount++;
+                }
+                rewritten += word[i];
+            }
+            return rewritten;
+        }
+
+        rewriteButton.addEventListener('click', () => {
+            let message = messageInput.value;
+            const originalNewlines = message.split('\n');
+
+            let rewrittenMessageText = originalNewlines.map(line => {
+                if (!line) return line; // Return original line to preserve empty lines
+
+                let rewrittenLine = line;
+                filterText.forEach(word => {
+                    // Create regex to match the word anywhere within a larger word
+                    const regex = new RegExp(`${word}`, 'gi'); // Removed word boundaries
+
+                    rewrittenLine = rewrittenLine.replace(regex, (match) => {
+                         return rewriteWord(match);
+                    });
+
+                });
+                return rewrittenLine;
+            }).join('\n'); // Restore original newlines
+
+            rewrittenMessage.value = rewrittenMessageText; // Set the rewritten text into the textarea
+            rewrittenMessage.style.display = "block"; // Show the textarea
+            copyButton.style.display = "flex";  // Show the copy button
+        });
+
+        // Trigger rewrite on Enter key press in the textarea
+        messageInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // Prevent newline in textarea
+                //rewriteButton.click(); // Trigger the rewrite button
+            }
+        });
+
+        copyButton.addEventListener('click', () => {
+            rewrittenMessage.select();
+            rewrittenMessage.setSelectionRange(0, 99999); // For mobile devices
+
+            navigator.clipboard.writeText(rewrittenMessage.value)
+                .then(() => {
+                    showToast();
+                })
+                .catch(err => {
+                    console.error('Failed to copy text: ', err);
+                    alert('Failed to copy text. Please try again.');
+                });
+        });
+
+        function showToast() {
+            toast.style.display = 'flex'; // Show the toast
+
+            setTimeout(() => {
+                toast.style.display = 'none'; // Hide the toast after 4 seconds
+            }, 4000);
+        }
+
+
+        // Close toast functionality (optional)
+        toast.querySelector('[data-dismiss-target="#toast-success"]').addEventListener('click', function () {
+            toast.style.display = 'none';
+        });
+
+
+        // Function to check textarea content and enable/disable rewrite button
+        function checkTextarea() {
+            if (messageInput.value.trim() === "") {
+                rewriteButton.disabled = true;
+                rewriteButton.classList.add('opacity-50', 'cursor-not-allowed');  // Add Tailwind classes for disabled state
+                rewriteButton.classList.remove('hover:bg-green-800'); // Remove hover effect when disabled
+
+            } else {
+                rewriteButton.disabled = false;
+                rewriteButton.classList.remove('opacity-50', 'cursor-not-allowed'); // Remove disabled classes
+                rewriteButton.classList.add('hover:bg-green-800'); // Add hover effect when enabled
+
+            }
+        }
+
+
+        // Event listener to track changes in the textarea
+        messageInput.addEventListener('input', checkTextarea);
+
+        // Call checkTextarea() initially to set the initial state
+        checkTextarea();
+
+        //Disable the rewrite button on Enter Key press
+         messageInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // Prevent newline in textarea
+                rewriteButton.disabled = true;
+            }
+        });
+    </script>
+</body>
+</html>
